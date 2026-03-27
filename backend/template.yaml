@@ -1,0 +1,212 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  StudyHub Student Collaboration Platform
+  Single Lambda backend with API Gateway, DynamoDB, S3, and SNS
+
+# ---------------------------------------------------------------------------
+# Global settings
+# ---------------------------------------------------------------------------
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: python3.12
+    MemorySize: 256
+    Environment:
+      Variables:
+        REGION: eu-west-1
+
+# ---------------------------------------------------------------------------
+# Parameters
+# ---------------------------------------------------------------------------
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+
+  JwtSecret:
+    Type: String
+    Default: studyhub-secret-key-2026
+    NoEcho: true
+
+# ---------------------------------------------------------------------------
+# Resources
+# ---------------------------------------------------------------------------
+Resources:
+
+  # -------------------------------------------------------------------------
+  # DynamoDB — single table design
+  # -------------------------------------------------------------------------
+  StudyHubTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub studyhub-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      Tags:
+        - Key: Project
+          Value: StudyHub
+        - Key: Environment
+          Value: !Ref Environment
+
+  # -------------------------------------------------------------------------
+  # S3 bucket for file uploads
+  # -------------------------------------------------------------------------
+  FilesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub studyhub-files-${Environment}-anjaneyareddy
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [GET, PUT, POST, DELETE]
+            AllowedOrigins: ['*']
+            MaxAge: 3600
+      Tags:
+        - Key: Project
+          Value: StudyHub
+
+  # -------------------------------------------------------------------------
+  # SNS topic for notifications
+  # -------------------------------------------------------------------------
+  NotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub studyhub-notifications-${Environment}
+      Tags:
+        - Key: Project
+          Value: StudyHub
+
+  # -------------------------------------------------------------------------
+  # IAM role for the Lambda function
+  # -------------------------------------------------------------------------
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub studyhub-lambda-role-${Environment}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: StudyHubDynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                Resource: !GetAtt StudyHubTable.Arn
+
+        - PolicyName: StudyHubS3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:DeleteObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt FilesBucket.Arn
+                  - !Sub '${FilesBucket.Arn}/*'
+
+        - PolicyName: StudyHubSNSAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                  - sns:Subscribe
+                  - sns:GetTopicAttributes
+                Resource: !Ref NotificationTopic
+
+  # -------------------------------------------------------------------------
+  # Lambda function
+  # -------------------------------------------------------------------------
+  StudyHubFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub studyhub-api-${Environment}
+      Handler: lambda_function.lambda_handler
+      CodeUri: .
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: !Ref StudyHubTable
+          S3_BUCKET: !Ref FilesBucket
+          SNS_TOPIC_ARN: !Ref NotificationTopic
+          JWT_SECRET: !Ref JwtSecret
+      Events:
+        # Catch-all proxy route
+        ApiProxy:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+            RestApiId: !Ref StudyHubApi
+        # Root path
+        ApiRoot:
+          Type: Api
+          Properties:
+            Path: /
+            Method: ANY
+            RestApiId: !Ref StudyHubApi
+
+  # -------------------------------------------------------------------------
+  # API Gateway
+  # -------------------------------------------------------------------------
+  StudyHubApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub studyhub-api-${Environment}
+      StageName: !Ref Environment
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'"
+
+# ---------------------------------------------------------------------------
+# Outputs
+# ---------------------------------------------------------------------------
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${StudyHubApi}.execute-api.eu-west-1.amazonaws.com/${Environment}/'
+
+  FunctionArn:
+    Description: Lambda function ARN
+    Value: !GetAtt StudyHubFunction.Arn
+
+  DynamoDBTableName:
+    Description: DynamoDB table name
+    Value: !Ref StudyHubTable
+
+  S3BucketName:
+    Description: S3 bucket for files
+    Value: !Ref FilesBucket
+
+  SNSTopicArn:
+    Description: SNS topic ARN
+    Value: !Ref NotificationTopic
