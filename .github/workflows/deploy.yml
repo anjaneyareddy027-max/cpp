@@ -106,9 +106,7 @@ jobs:
         run: |
           ROLE_ARN=$(aws iam get-role --role-name studyhub-lambda-role --query 'Role.Arn' --output text)
 
-          FUNCTION_EXISTS=$(aws lambda get-function --function-name studyhub-api --region eu-west-1 2>/dev/null && echo "yes" || echo "no")
-
-          if [ "$FUNCTION_EXISTS" = "yes" ]; then
+          if aws lambda get-function --function-name studyhub-api --region eu-west-1 > /dev/null 2>&1; then
             aws lambda update-function-code \
               --function-name studyhub-api \
               --zip-file fileb://lambda.zip \
