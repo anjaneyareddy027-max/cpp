@@ -1,0 +1,324 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{tabularx}
+
+% Code listing style
+\lstdefinestyle{codestyle}{
+    backgroundcolor=\color{gray!10},
+    basicstyle=\ttfamily\scriptsize,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!50!black},
+    stringstyle=\color{red!70!black},
+    showstringspaces=false,
+    tabsize=2
+}
+\lstset{style=codestyle}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{StudyHub: Design and Development of a Scalable Cloud-Native Student Collaboration Platform Using Distributed Systems Architecture}
+
+\author{\IEEEauthorblockN{Gurram Anjaneya Reddy}
+\IEEEauthorblockA{Student ID: x24288853 \\
+MSc in Cloud Computing \\
+National College of Ireland, Dublin \\
+x24288853@student.ncirl.ie}}
+
+\maketitle
+
+% ============================================================
+% ABSTRACT
+% ============================================================
+\begin{abstract}
+This paper presents the design, development, and deployment of StudyHub, a cloud-native student collaboration platform built on a serverless distributed systems architecture using Amazon Web Services. The platform addresses the growing need for integrated academic collaboration tools by providing user authentication with JWT-based access control, shared project and task management with full CRUD operations, real-time messaging within project contexts, cloud-based file sharing, and automated deadline notification delivery via email. The system programmatically integrates six AWS services: AWS Lambda for serverless compute, Amazon DynamoDB for NoSQL data persistence using a single-table design, Amazon API Gateway for RESTful endpoint routing with CORS support, Amazon S3 for file storage and static website hosting, Amazon Simple Notification Service for email-based task and deadline notifications, and AWS Identity and Access Management for fine-grained permission control across all service interactions. A custom object-oriented Python library called studyhub-collab-nci was developed and published to the Python Package Index, providing authentication utilities with PBKDF2 password hashing, input validation, deadline scheduling logic, and task formatting capabilities across 37 automated unit tests. The application follows a fully serverless architecture pattern with automated infrastructure provisioning through a GitHub Actions CI/CD pipeline. The results demonstrate that serverless cloud services can be effectively orchestrated to deliver a secure, scalable, and cost-efficient collaboration platform suitable for academic environments.
+\end{abstract}
+
+% ============================================================
+% INTRODUCTION
+% ============================================================
+\section{Introduction}
+
+The rapid growth of hybrid and online learning environments has fundamentally changed how students collaborate on academic projects. Students increasingly rely on multiple disconnected applications for communication, task management, file sharing, and deadline tracking, creating fragmentation that reduces productivity and complicates coordination \cite{cloudpatterns}. This fragmentation is particularly problematic for group assignments and collaborative projects where effective communication and shared task visibility are essential for successful outcomes.
+
+The motivation for this project stems from the need for an integrated, secure, and scalable platform that consolidates the core collaboration functions required by student teams into a single cloud-native application. By leveraging the serverless computing paradigm on AWS, the platform eliminates the operational complexity of server management while providing automatic scaling, high availability, and cost-efficient pay-per-use pricing that is well-suited to the variable usage patterns of academic environments \cite{serverless}.
+
+The primary objectives of this project are as follows. First, to design and implement a secure user authentication and access control system using cryptographic password hashing and JWT-based token verification. Second, to establish complete CRUD operations for shared task management within collaborative projects, enabling teams to create, assign, prioritise, and track tasks through their lifecycle. Third, to integrate real-time messaging and file-sharing capabilities within project contexts, providing communication channels that are directly associated with the relevant collaborative work. Fourth, to ensure scalable deployment according to cloud-native architectural design principles, using serverless services that automatically scale with demand. Fifth, to implement automated notification delivery for task creation and deadline awareness through Amazon SNS email subscriptions.
+
+% ============================================================
+% PROJECT SPECIFICATION AND REQUIREMENTS
+% ============================================================
+\section{Project Specification and Requirements}
+
+\subsection{Functional Requirements}
+
+The application satisfies the following functional requirements. The authentication subsystem provides secure user registration with PBKDF2-HMAC-SHA256 password hashing using random 32-byte salts, and login functionality that returns a signed JWT token containing the user identifier, username, and expiration timestamp. All protected API endpoints validate the JWT token from the Authorization header before processing requests, ensuring that only authenticated users can access project data.
+
+The project management module supports full CRUD operations for collaborative projects. Users can create projects with names and descriptions, view all projects they are members of, update project details, and delete projects with cascading removal of all associated tasks, messages, and files. A member management feature allows project creators to invite additional users by email address, adding them to the project's member list.
+
+The task management module enables creation, retrieval, updating, and deletion of tasks within projects. Each task includes a title, description, priority level (low, medium, high, urgent), status (todo, in\_progress, review, done), optional deadline, and assignee. Task creation triggers an automatic SNS notification to all topic subscribers, informing them of new work items.
+
+The messaging module provides project-scoped communication, allowing team members to send and retrieve messages within the context of a specific project. Each message records the sender's identity and timestamp, enabling chronological conversation threading.
+
+The file-sharing module allows users to upload files to projects via base64-encoded content through the API. Files are stored in Amazon S3 with project-scoped key prefixes, and metadata is recorded in DynamoDB for retrieval and listing.
+
+\subsection{Non-Functional Requirements}
+
+The non-functional requirements address scalability, security, cost efficiency, and maintainability. The serverless architecture provides inherent horizontal scalability through AWS Lambda's automatic concurrent execution model, which scales from zero to thousands of simultaneous requests without configuration \cite{awslambda}. Security is implemented through multiple layers: PBKDF2 password hashing with 100,000 iterations prevents brute-force attacks on stored credentials, HMAC-SHA256 token signatures prevent token forgery, IAM role-based policies enforce least-privilege access for the Lambda execution environment, and CORS headers restrict cross-origin API access. Cost efficiency is achieved through DynamoDB's on-demand billing mode and Lambda's per-invocation pricing, ensuring that costs scale linearly with actual usage rather than provisioned capacity. Maintainability is supported through a single-table DynamoDB design that simplifies data access patterns and a modular Lambda handler with clearly separated route functions.
+
+% ============================================================
+% ARCHITECTURE AND DESIGN
+% ============================================================
+\section{Architecture and Design}
+
+StudyHub follows a serverless microservices-inspired architecture comprising three distinct tiers: a static presentation tier hosted on Amazon S3, a serverless application tier powered by AWS Lambda and Amazon API Gateway, and a data persistence tier using Amazon DynamoDB and Amazon S3 \cite{cloudpatterns}. This architecture was selected for its elimination of server provisioning and management overhead, automatic scaling capabilities, built-in high availability through AWS managed services, and pay-per-use cost model.
+
+The frontend is a single-page React 19 application built with Vite and styled using Tailwind CSS v4. The compiled static assets are deployed to an S3 bucket configured for static website hosting, providing direct HTTP access through the S3 website endpoint. The application implements client-side routing with React Router v7 and maintains authentication state through browser localStorage, with an AuthContext provider that manages JWT tokens across the component tree.
+
+The application tier consists of a single AWS Lambda function that receives all HTTP requests through API Gateway's proxy integration with a catch-all \texttt{\{proxy+\}} resource. The Lambda function implements an internal routing mechanism that dispatches requests to dedicated handler functions based on the HTTP method and URL path pattern. This monolithic Lambda approach was chosen over individual functions to reduce deployment complexity, minimise cold start frequency across related endpoints, and simplify shared utility access for authentication and database operations.
+
+The data tier employs a single-table DynamoDB design where all entity types (users, projects, tasks, messages, files) coexist in one table distinguished by an \texttt{entityType} attribute. Each item uses a UUID as its partition key (\texttt{id}). This design simplifies infrastructure provisioning and reduces the number of DynamoDB tables to manage, while entity-specific queries are achieved through DynamoDB scan operations with filter expressions on the \texttt{entityType} and related foreign key attributes such as \texttt{projectId}.
+
+% ============================================================
+% LIBRARY DESCRIPTION
+% ============================================================
+\section{StudyHub Library}
+
+The studyhub-collab-nci library is a custom Python package developed to encapsulate the authentication, validation, scheduling, and formatting logic required by the collaboration platform. The library is implemented using only Python standard library modules with zero external dependencies, ensuring portability and minimal installation overhead.
+
+The library comprises four primary classes. The \texttt{AuthManager} class provides cryptographic password hashing using \texttt{hashlib.pbkdf2\_hmac} with SHA-256 and 100,000 iterations, password verification, JWT-like token generation and decoding using HMAC-SHA256 signatures, and password strength validation enforcing minimum length, uppercase character, and digit requirements. The \texttt{InputValidator} class provides validation methods for users, projects, tasks, and messages, along with HTML tag sanitisation using regular expression substitution to prevent cross-site scripting attacks. The \texttt{DeadlineChecker} class implements deadline proximity detection, overdue task identification, reminder message generation, multi-criteria task prioritisation (sorting by overdue status, priority level, and deadline), and project progress calculation with percentage completion and per-status breakdowns. The \texttt{TaskFormatter} class produces formatted output including single-line task summaries, multi-section project reports, deadline alert messages, CSV exports with proper header rows, and activity feed formatting from message histories.
+
+The following code snippet demonstrates the authentication flow using the library:
+
+\begin{lstlisting}[language=Python, caption={AuthManager usage for password hashing and JWT tokens}]
+from studyhub_lib import AuthManager
+
+auth = AuthManager()
+
+# Hash a password during registration
+hashed, salt = auth.hash_password("SecurePass123!")
+# hashed: hex string, salt: hex string
+
+# Verify during login
+is_valid = auth.verify_password(
+    "SecurePass123!", hashed, salt)
+# Returns True
+
+# Generate a JWT-like token
+token = auth.generate_token(
+    user_id="uuid-123",
+    username="student1",
+    secret_key="app-secret",
+    expires_hours=24)
+
+# Decode and verify the token
+payload = auth.decode_token(token, "app-secret")
+# Returns: {userId, username, iat, exp}
+\end{lstlisting}
+
+The library includes 37 unit tests implemented with pytest, covering authentication round-trips, token expiration handling, password strength validation edge cases, input validation for all entity types, HTML sanitisation, deadline proximity detection with controlled timestamps, task prioritisation ordering, project progress calculation, and formatter output correctness including CSV structure. The library is published on the Python Package Index at \url{https://pypi.org/project/studyhub-collab-nci/1.0.0/} and can be installed via \texttt{pip install studyhub-collab-nci}.
+
+% ============================================================
+% CLOUD SERVICES
+% ============================================================
+\section{Cloud-Based Services}
+
+The application integrates six AWS services, each serving a distinct architectural purpose. This section provides a critical analysis and justification for each service selection.
+
+\subsection{AWS Lambda}
+
+AWS Lambda provides the serverless compute environment for the entire backend API, executing a Python 3.11 handler function in response to API Gateway proxy events \cite{awslambda}. Lambda was selected over container-based alternatives such as AWS Fargate or Amazon ECS because the event-driven request-response pattern of a REST API aligns naturally with Lambda's invocation model, the automatic scaling from zero eliminates over-provisioning costs during low-usage periods common in academic environments, and the managed runtime eliminates operating system patching and security update responsibilities. The function is configured with 256 MB of memory and a 30-second timeout, providing sufficient resources for database operations, file processing, and SNS notification publishing.
+
+\subsection{Amazon DynamoDB}
+
+Amazon DynamoDB provides a fully managed NoSQL database using a single-table design for all application data \cite{awsdynamodb}. The table uses on-demand (PAY\_PER\_REQUEST) billing mode, which automatically adjusts throughput capacity based on actual traffic without requiring capacity planning. DynamoDB was preferred over Amazon RDS for several reasons: the entity data models (users, projects, tasks, messages, files) are self-contained without complex cross-entity joins, the schema-flexible nature accommodates varying attribute sets across entity types without migration scripts, the single-digit millisecond response times ensure responsive API performance, and the managed nature eliminates database administration tasks including backups, patching, and connection pool management.
+
+\subsection{Amazon API Gateway}
+
+Amazon API Gateway provides the HTTP endpoint layer that routes incoming requests to the Lambda function using proxy integration \cite{awsapigateway}. The REST API is configured with a catch-all \texttt{\{proxy+\}} resource and an ANY method that forwards all HTTP methods and paths to the Lambda handler, enabling application-level routing. API Gateway additionally handles CORS preflight OPTIONS requests through a MOCK integration that returns the required Access-Control headers, preventing cross-origin request failures from the S3-hosted frontend.
+
+\subsection{Amazon S3}
+
+Amazon S3 serves a dual purpose in the architecture \cite{awss3}. The first bucket stores user-uploaded files with project-scoped key prefixes (e.g., \texttt{projects/\{projectId\}/\{uuid\}\_filename}), providing durable and cost-effective object storage. The second bucket hosts the compiled React frontend as a static website with public read access, eliminating the need for a web server process. The file storage bucket includes CORS configuration to support direct browser interactions.
+
+\begin{lstlisting}[language=Python, caption={S3 file upload within project context}]
+def handle_upload_file(event, user, project_id):
+    body = parse_body(event)
+    file_content = base64.b64decode(body['fileContent'])
+    file_key = f"projects/{project_id}/{uuid4()}_{name}"
+    s3_client.put_object(
+        Bucket=S3_BUCKET, Key=file_key,
+        Body=file_content, ContentType=file_type)
+    file_url = f"https://{S3_BUCKET}.s3.{REGION}" \
+               f".amazonaws.com/{file_key}"
+    # Store metadata in DynamoDB
+    table.put_item(Item={
+        'id': str(uuid4()), 'entityType': 'file',
+        'projectId': project_id,
+        'fileName': name, 'fileUrl': file_url,
+        'uploadedBy': user['userId']})
+\end{lstlisting}
+
+\subsection{Amazon SNS}
+
+Amazon Simple Notification Service provides the publish-subscribe messaging infrastructure for task and deadline notifications \cite{awssns}. An SNS topic named \texttt{studyhub-notifications} serves as the central notification channel. Users subscribe through the application interface by providing their email address, receiving a confirmation email that they must acknowledge to activate the subscription. When tasks are created or deadlines approach, the Lambda function publishes structured notification messages to the topic, which SNS then fans out to all confirmed email subscribers.
+
+\begin{lstlisting}[language=Python, caption={SNS notification on task creation}]
+# Publish notification when a new task is created
+if SNS_TOPIC_ARN:
+    sns_client.publish(
+        TopicArn=SNS_TOPIC_ARN,
+        Subject='StudyHub - New Task Created',
+        Message=(
+            f"A new task has been created.\n\n"
+            f"Title: {title}\n"
+            f"Priority: {priority}\n"
+            f"Created by: {user['username']}\n"
+            f"Project: {project_id}"))
+\end{lstlisting}
+
+\subsection{AWS Identity and Access Management (IAM)}
+
+AWS IAM provides the security foundation for the serverless architecture by defining the Lambda execution role and its associated permission policies \cite{awsiam}. The \texttt{studyhub-lambda-role} IAM role grants the Lambda function precisely the permissions it requires: DynamoDB read and write access for data operations, S3 read and write access for file storage, SNS publish and subscribe access for notifications, and CloudWatch Logs write access for operational monitoring. This principle of least privilege ensures that even if the Lambda function were compromised, the blast radius would be limited to the specific services and actions explicitly permitted by the IAM policies.
+
+% ============================================================
+% IMPLEMENTATION
+% ============================================================
+\section{Implementation}
+
+The implementation follows a modular architecture with clear separation between authentication, project management, task management, messaging, file operations, and notification handling. This section documents the key implementation aspects.
+
+\subsection{Authentication System}
+
+The authentication system implements a custom JWT-like token mechanism without external library dependencies. During registration, the password is hashed using PBKDF2-HMAC-SHA256 with a cryptographically random 32-byte salt and 100,000 iterations. The resulting hash and salt are stored alongside the user record in DynamoDB. During login, the submitted password is re-hashed with the stored salt and compared against the stored hash. Upon successful authentication, a token is generated by creating a JSON header and payload, encoding them in base64, computing an HMAC-SHA256 signature over the encoded segments using a server-side secret key, and concatenating the three parts with period separators. Protected endpoints extract and verify this token on every request before processing.
+
+\subsection{API Endpoints and CRUD Operations}
+
+The Lambda function implements fourteen distinct API routes through an internal routing mechanism. Table~\ref{tab:endpoints} summarises the primary endpoints.
+
+\begin{table}[H]
+\centering
+\caption{StudyHub REST API Endpoints}
+\label{tab:endpoints}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Method} & \textbf{Endpoint} & \textbf{Description} \\
+\hline
+POST & /auth/register & User registration \\
+POST & /auth/login & User login \\
+\hline
+GET & /projects & List user projects \\
+POST & /projects & Create project \\
+GET & /projects/\{id\} & Get project details \\
+PUT & /projects/\{id\} & Update project \\
+DELETE & /projects/\{id\} & Delete project \\
+POST & /projects/\{id\}/members & Add member \\
+\hline
+GET & /projects/\{id\}/tasks & List tasks \\
+POST & /projects/\{id\}/tasks & Create task \\
+PUT & /tasks/\{id\} & Update task \\
+DELETE & /tasks/\{id\} & Delete task \\
+\hline
+GET & /projects/\{id\}/messages & Get messages \\
+POST & /projects/\{id\}/messages & Send message \\
+\hline
+POST & /projects/\{id\}/files & Upload file \\
+GET & /projects/\{id\}/files & List files \\
+\hline
+POST & /subscribe & Subscribe email (SNS) \\
+GET & /subscribers & Get subscriber count \\
+\hline
+\end{tabular}
+\end{table}
+
+A critical implementation detail involved DynamoDB's type system requirements. The boto3 DynamoDB resource requires Python \texttt{Decimal} objects rather than native \texttt{float} or \texttt{int} types for numeric values. A recursive conversion function transforms all numeric values in incoming request bodies before writing to DynamoDB, preventing type serialisation errors that would otherwise cause 502 Bad Gateway responses from API Gateway.
+
+\subsection{Frontend Implementation}
+
+The frontend is implemented as a single-page React 19 application with a professional collaboration tool aesthetic. The interface features a dark slate-900 sidebar with navigation links for the dashboard and projects, a light slate-50 content area with card-based layouts, and colour-coded status badges and priority indicators. Task statuses use distinct visual treatments: gray for todo, blue for in-progress, amber for review, and emerald for completed. Priority levels use escalating visual intensity from slate (low) through blue (medium) and amber (high) to rose with a pulse animation (urgent). Project cards display completion progress bars calculated from the ratio of completed tasks to total tasks. The chat interface aligns messages differently based on sender identity, with the current user's messages appearing on the right and other users' messages on the left, following established messaging application conventions.
+
+\subsection{Testing}
+
+The custom library includes 37 automated unit tests implemented with pytest. The test suite covers password hashing round-trip verification, token generation and decoding with both valid and expired tokens, password strength validation with weak and strong inputs, user, project, task, and message validation with valid and invalid data, HTML tag sanitisation, deadline checking with controlled timestamps, task prioritisation ordering verification, project progress calculation accuracy, and output format correctness for all formatter methods including CSV structure.
+
+% ============================================================
+% CI/CD AND DEPLOYMENT
+% ============================================================
+\section{Continuous Integration, Delivery and Deployment}
+
+The application source code is maintained in a private GitHub repository at \url{https://github.com/anjaneyareddy027-max/cpp}. A comprehensive CI/CD pipeline was implemented using GitHub Actions, triggered automatically on every push to the main branch. The pipeline consists of three sequential jobs that automate testing, infrastructure provisioning, and deployment.
+
+The first job (\texttt{test-library}) installs the studyhub-collab-nci library and executes the full pytest suite of 37 unit tests. Only when all tests pass does the pipeline proceed to infrastructure deployment.
+
+The second job (\texttt{deploy-backend}) provisions all required AWS infrastructure using the AWS CLI with idempotent commands. This includes creating the DynamoDB table with on-demand billing, creating S3 buckets with CORS configurations, creating an IAM role and attaching five managed policies (DynamoDB, S3, SNS, Lambda Basic Execution, and CloudWatch Logs), creating the SNS notification topic, packaging and deploying the Lambda function with environment variables dynamically injected from the pipeline context, and configuring API Gateway with proxy integration, CORS-enabled OPTIONS methods, and a production stage deployment.
+
+The third job (\texttt{deploy-frontend}) retrieves the API Gateway URL from the deployed infrastructure, builds the React application with the API URL injected as a Vite build-time environment variable, configures the frontend S3 bucket for public static website hosting by disabling Block Public Access and applying a public read bucket policy, and synchronises the compiled assets.
+
+The entire pipeline requires only two GitHub repository secrets (\texttt{AWS\_ACCESS\_KEY\_ID} and \texttt{AWS\_SECRET\_ACCESS\_KEY}), with all other configuration values derived dynamically during execution. The pipeline is fully idempotent and safe to execute repeatedly.
+
+The deployed frontend is accessible at: \url{http://studyhub-frontend-prod-anjaneyareddy.s3-website-eu-west-1.amazonaws.com}. The custom library is published at: \url{https://pypi.org/project/studyhub-collab-nci/1.0.0/}.
+
+% ============================================================
+% CONCLUSIONS
+% ============================================================
+\section{Conclusions}
+
+This project successfully demonstrates the design and deployment of a scalable cloud-native student collaboration platform that integrates six AWS services to deliver secure authentication, project management, task tracking, messaging, file sharing, and notification capabilities through a serverless distributed architecture.
+
+Several key findings emerged during the development process. First, the single-table DynamoDB design proved effective for a multi-entity application where entities share a common access pattern of single-item retrieval by primary key. By using an \texttt{entityType} discriminator attribute, all five entity types coexist in one table without schema conflicts. However, this design requires scan operations with filter expressions for entity-type-specific queries, which would become inefficient at scale. For production deployments with large data volumes, Global Secondary Indexes on commonly filtered attributes such as \texttt{entityType}, \texttt{projectId}, and \texttt{email} would be essential for maintaining query performance.
+
+Second, implementing JWT-like authentication without external libraries demonstrated that the Python standard library provides sufficient cryptographic primitives (hashlib, hmac, secrets) for secure authentication in serverless environments. The 100,000-iteration PBKDF2 configuration adds approximately 200 milliseconds to each login request but provides strong resistance against brute-force attacks on leaked credential databases. This trade-off is acceptable for an authentication endpoint where response latency is less critical than security.
+
+Third, the fully automated CI/CD pipeline that provisions infrastructure from scratch on every deployment proved invaluable for maintaining consistency between development and production environments. The idempotent design of all AWS CLI resource creation commands means the pipeline safely handles both initial provisioning and incremental updates, eliminating configuration drift that commonly occurs with manual infrastructure management.
+
+Fourth, Amazon SNS provided a straightforward notification mechanism with built-in subscription management. The confirmation email workflow ensures compliance with anti-spam regulations, and the fan-out delivery model efficiently distributes notifications to all subscribers without requiring the application to manage recipient lists.
+
+The main limitations of the current implementation include the absence of WebSocket support for real-time message delivery (currently requiring page refresh to see new messages), the use of DynamoDB scan operations for listing queries (which would not scale efficiently beyond several thousand items), and the lack of file size limits enforcement at the API level. Future enhancements could include WebSocket integration through API Gateway WebSocket APIs for real-time chat, implementation of DynamoDB Global Secondary Indexes for efficient querying, integration with Amazon Cognito for federated identity and social login support, addition of role-based access control within projects (admin, editor, viewer), and implementation of file preview capabilities using Amazon CloudFront for CDN-accelerated delivery.
+
+The development of this project provided extensive hands-on experience with serverless architecture design, AWS service integration through the boto3 SDK, cryptographic authentication implementation, React frontend development with modern tooling, and the construction of automated deployment pipelines that treat cloud infrastructure as code. The experience reinforced the viability of serverless computing as a practical and cost-effective paradigm for building distributed collaborative applications in academic and small-team contexts.
+
+% ============================================================
+% REFERENCES
+% ============================================================
+\begin{thebibliography}{00}
+
+\bibitem{cloudpatterns} C. Richardson, ``Microservices Patterns: With Examples in Java,'' Manning Publications, 2018.
+
+\bibitem{serverless} P. Sbarski, ``Serverless Architectures on AWS: With Examples Using AWS Lambda,'' 2nd ed., Manning Publications, 2022.
+
+\bibitem{awslambda} Amazon Web Services, ``AWS Lambda Developer Guide,'' 2024. [Online]. Available: https://docs.aws.amazon.com/lambda/
+
+\bibitem{awsdynamodb} Amazon Web Services, ``Amazon DynamoDB Developer Guide,'' 2024. [Online]. Available: https://docs.aws.amazon.com/dynamodb/
+
+\bibitem{awsapigateway} Amazon Web Services, ``Amazon API Gateway Developer Guide,'' 2024. [Online]. Available: https://docs.aws.amazon.com/apigateway/
+
+\bibitem{awss3} Amazon Web Services, ``Amazon Simple Storage Service (S3) Documentation,'' 2024. [Online]. Available: https://docs.aws.amazon.com/s3/
+
+\bibitem{awssns} Amazon Web Services, ``Amazon Simple Notification Service Developer Guide,'' 2024. [Online]. Available: https://docs.aws.amazon.com/sns/
+
+\bibitem{awsiam} Amazon Web Services, ``AWS Identity and Access Management User Guide,'' 2024. [Online]. Available: https://docs.aws.amazon.com/iam/
+
+\bibitem{react} Meta Platforms, ``React Documentation,'' 2024. [Online]. Available: https://react.dev/
+
+\bibitem{jwt} M. Jones, J. Bradley, and N. Sakimura, ``JSON Web Token (JWT),'' RFC 7519, Internet Engineering Task Force, 2015. [Online]. Available: https://tools.ietf.org/html/rfc7519
+
+\end{thebibliography}
+
+\end{document}
