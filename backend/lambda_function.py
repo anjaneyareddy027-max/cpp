@@ -962,12 +962,5 @@ def lambda_handler(event, context):
         if http_method == 'DELETE':
             return handle_delete_task(event, user, task_id)
 
-    # -- Notification routes ------------------------------------------------
-    if path == '/subscribe' and http_method == 'POST':
-        return handle_subscribe(event, user)
-
-    if path == '/subscribers' and http_method == 'GET':
-        return handle_get_subscribers(event, user)
-
     # -- Fallback -----------------------------------------------------------
     return build_response(404, {'error': f'Route not found: {http_method} {path}'})
