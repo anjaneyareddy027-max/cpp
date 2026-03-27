@@ -3,7 +3,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="studyhub-nci",
+    name="studyhub-collab-nci",
     version="1.0.0",
     author="Anjaneya Reddy",
     description=(
