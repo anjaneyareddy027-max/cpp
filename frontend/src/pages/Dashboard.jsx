@@ -10,33 +10,25 @@ import {
   CheckCircle2,
   Clock,
   Users,
-  ArrowRight,
   X,
   Loader2,
   CalendarDays,
 } from 'lucide-react';
 
-function StatCard({ icon: Icon, label, value, color, loading }) {
-  const colorMap = {
-    indigo: 'bg-indigo-50 text-indigo-600',
-    emerald: 'bg-emerald-50 text-emerald-600',
-    amber: 'bg-amber-50 text-amber-600',
-    rose: 'bg-rose-50 text-rose-600',
-  };
-
+function StatCard({ icon: Icon, label, value, loading }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200/80 p-5 hover:shadow-md transition-shadow duration-200">
+    <div className="bg-white rounded-lg border border-gray-200 p-5">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium text-slate-500">{label}</p>
+          <p className="text-sm text-gray-500">{label}</p>
           {loading ? (
             <div className="skeleton w-12 h-8 mt-1" />
           ) : (
-            <p className="text-2xl font-bold text-slate-800 mt-1">{value}</p>
+            <p className="text-2xl font-bold text-gray-800 mt-1">{value}</p>
           )}
         </div>
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colorMap[color]}`}>
-          <Icon className="w-5 h-5" />
+        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+          <Icon className="w-5 h-5 text-gray-500" />
         </div>
       </div>
     </div>
@@ -61,36 +53,31 @@ function ProjectCard({ project }) {
   return (
     <Link
       to={`/projects/${project.project_id}`}
-      className="group block bg-white rounded-xl border border-slate-200/80 p-5 hover:shadow-lg hover:border-indigo-200 transition-all duration-200"
+      className="block bg-white rounded-lg border border-gray-200 p-5 hover:border-blue-300 transition-colors"
     >
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-slate-800 group-hover:text-indigo-600 transition-colors truncate">
-            {project.name}
-          </h3>
-          <p className="text-sm text-slate-500 mt-0.5 line-clamp-2">
-            {project.description || 'No description'}
-          </p>
-        </div>
-        <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-colors ml-3 mt-1 shrink-0" />
+      <div className="mb-3">
+        <h3 className="font-semibold text-gray-800 truncate">{project.name}</h3>
+        <p className="text-sm text-gray-500 mt-0.5 line-clamp-2">
+          {project.description || 'No description'}
+        </p>
       </div>
 
       {/* Progress */}
       <div className="mb-3">
         <div className="flex items-center justify-between text-xs mb-1.5">
-          <span className="text-slate-500 font-medium">Task progress</span>
-          <span className="text-slate-600 font-semibold">{progress}%</span>
+          <span className="text-gray-500">Task progress</span>
+          <span className="text-gray-700 font-semibold">{progress}%</span>
         </div>
-        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
           <div
-            className="h-full bg-indigo-600 rounded-full transition-all duration-500"
+            className="h-full bg-blue-600 rounded-full transition-all duration-500"
             style={{ width: `${progress}%` }}
           />
         </div>
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-100">
+      <div className="flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-100">
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1">
             <Users className="w-3.5 h-3.5" />
@@ -112,7 +99,7 @@ function ProjectCard({ project }) {
   );
 }
 
-export default function Dashboard({ onProjectCountChange }) {
+export default function Dashboard() {
   const { user } = useAuth();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -126,7 +113,6 @@ export default function Dashboard({ onProjectCountChange }) {
       const res = await getProjects();
       const list = res.data.projects || res.data || [];
       setProjects(list);
-      onProjectCountChange?.(list.length);
     } catch (err) {
       toast.error('Failed to load projects');
     } finally {
@@ -182,16 +168,16 @@ export default function Dashboard({ onProjectCountChange }) {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">
+          <h1 className="text-2xl font-bold text-gray-800">
             Welcome back, {user?.username || 'there'}
           </h1>
-          <p className="text-slate-500 mt-1 text-sm">
+          <p className="text-gray-500 mt-1 text-sm">
             Here's what's happening across your projects.
           </p>
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-lg transition-colors shadow-sm hover:shadow-md"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-lg transition-colors"
         >
           <Plus className="w-4 h-4" />
           New Project
@@ -200,49 +186,25 @@ export default function Dashboard({ onProjectCountChange }) {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard
-          icon={FolderKanban}
-          label="Total Projects"
-          value={projects.length}
-          color="indigo"
-          loading={loading}
-        />
-        <StatCard
-          icon={ListTodo}
-          label="Total Tasks"
-          value={totalTasks}
-          color="amber"
-          loading={loading}
-        />
-        <StatCard
-          icon={CheckCircle2}
-          label="Completed"
-          value={completedTasks}
-          color="emerald"
-          loading={loading}
-        />
-        <StatCard
-          icon={Clock}
-          label="Due This Week"
-          value={pendingDeadlines}
-          color="rose"
-          loading={loading}
-        />
+        <StatCard icon={FolderKanban} label="Total Projects" value={projects.length} loading={loading} />
+        <StatCard icon={ListTodo} label="Total Tasks" value={totalTasks} loading={loading} />
+        <StatCard icon={CheckCircle2} label="Completed" value={completedTasks} loading={loading} />
+        <StatCard icon={Clock} label="Due This Week" value={pendingDeadlines} loading={loading} />
       </div>
 
       {/* Projects */}
       <div className="mb-4">
-        <h2 className="text-lg font-semibold text-slate-800">Your Projects</h2>
+        <h2 className="text-lg font-semibold text-gray-800">Your Projects</h2>
       </div>
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white rounded-xl border border-slate-200/80 p-5">
+            <div key={i} className="bg-white rounded-lg border border-gray-200 p-5">
               <div className="skeleton w-3/4 h-5 mb-2" />
               <div className="skeleton w-full h-4 mb-1" />
               <div className="skeleton w-2/3 h-4 mb-4" />
-              <div className="skeleton w-full h-1.5 mb-4 rounded-full" />
+              <div className="skeleton w-full h-2 mb-4 rounded-full" />
               <div className="flex gap-4">
                 <div className="skeleton w-20 h-3" />
                 <div className="skeleton w-16 h-3" />
@@ -251,17 +213,17 @@ export default function Dashboard({ onProjectCountChange }) {
           ))}
         </div>
       ) : projects.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-slate-200/80">
-          <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-            <FolderKanban className="w-8 h-8 text-slate-400" />
+        <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
+          <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+            <FolderKanban className="w-8 h-8 text-gray-400" />
           </div>
-          <h3 className="text-lg font-semibold text-slate-700 mb-1">No projects yet</h3>
-          <p className="text-sm text-slate-500 mb-5">
+          <h3 className="text-lg font-semibold text-gray-700 mb-1">No projects yet</h3>
+          <p className="text-sm text-gray-500 mb-5">
             Create your first project to get started!
           </p>
           <button
             onClick={() => setShowModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-lg transition-colors"
           >
             <Plus className="w-4 h-4" />
             Create Project
@@ -277,23 +239,23 @@ export default function Dashboard({ onProjectCountChange }) {
 
       {/* Create Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-slide-up"
+            className="bg-white rounded-xl border border-gray-200 w-full max-w-md mx-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-              <h2 className="text-lg font-semibold text-slate-800">Create New Project</h2>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-800">Create New Project</h2>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleCreate} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Project name
                 </label>
                 <input
@@ -301,12 +263,12 @@ export default function Dashboard({ onProjectCountChange }) {
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder="e.g. CS101 Group Assignment"
-                  className="w-full px-3.5 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                   autoFocus
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Description
                 </label>
                 <textarea
@@ -314,21 +276,21 @@ export default function Dashboard({ onProjectCountChange }) {
                   onChange={(e) => setNewDesc(e.target.value)}
                   placeholder="What's this project about?"
                   rows={3}
-                  className="w-full px-3.5 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
                 />
               </div>
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={creating}
-                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-medium text-sm rounded-lg transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-medium text-sm rounded-lg transition-colors"
                 >
                   {creating ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
