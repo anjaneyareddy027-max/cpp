@@ -579,7 +579,7 @@ def handle_create_task(event, user, project_id):
             'title': title,
             'description': body.get('description', '').strip(),
             'priority': body.get('priority', 'medium'),
-            'status': 'todo',
+            'status': body.get('status', 'todo'),
             'deadline': body.get('deadline', ''),
             'assignedTo': body.get('assignedTo', ''),
             'createdBy': user['userId'],
@@ -886,6 +886,13 @@ def lambda_handler(event, context):
 
     if path == '/auth/login' and http_method == 'POST':
         return handle_login(event)
+
+    # Public notification routes (no auth required)
+    if path == '/subscribe' and http_method == 'POST':
+        return handle_subscribe(event, None)
+
+    if path == '/subscribers' and http_method == 'GET':
+        return handle_get_subscribers(event, None)
 
     # -----------------------------------------------------------------------
     # All remaining routes require authentication
