@@ -235,7 +235,7 @@ export default function ProjectDetail() {
         assigned_to: taskForm.assigned_to || undefined,
       };
       if (editingTask) {
-        await updateTask(editingTask.task_id, payload);
+        await updateTask(editingTask.id, payload);
         toast.success('Task updated');
       } else {
         await createTask(id, payload);
@@ -252,7 +252,7 @@ export default function ProjectDetail() {
 
   const handleStatusChange = async (task, newStatus) => {
     try {
-      await updateTask(task.task_id, { status: newStatus });
+      await updateTask(task.id, { status: newStatus });
       fetchTasks();
     } catch {
       toast.error('Failed to update status');
@@ -496,7 +496,7 @@ export default function ProjectDetail() {
 
                   return (
                     <div
-                      key={task.task_id}
+                      key={task.id}
                       className="bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors group"
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -552,7 +552,7 @@ export default function ProjectDetail() {
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={() => handleDeleteTask(task.task_id)}
+                            onClick={() => handleDeleteTask(task.id)}
                             className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
