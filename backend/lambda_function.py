@@ -739,9 +739,9 @@ def handle_create_message(event, user, project_id):
 def handle_upload_file(event, user, project_id):
     """POST /projects/{id}/files — upload a file to S3 and store metadata."""
     body = parse_body(event)
-    file_name = body.get('fileName', '').strip()
-    file_content_b64 = body.get('fileContent', '')
-    file_type = body.get('fileType', 'application/octet-stream')
+    file_name = (body.get('fileName') or body.get('file_name', '')).strip()
+    file_content_b64 = body.get('fileContent') or body.get('file_content', '')
+    file_type = body.get('fileType') or body.get('file_type', 'application/octet-stream')
 
     if not file_name or not file_content_b64:
         return build_response(400, {'error': 'fileName and fileContent (base64) are required'})
@@ -867,6 +867,13 @@ def lambda_handler(event, context):
     # Extract HTTP method and path
     http_method = event.get('httpMethod', '') or event.get('requestContext', {}).get('http', {}).get('method', '')
     path = event.get('path', '') or event.get('rawPath', '')
+
+    # Strip stage prefix if present (e.g. /prod/projects/... -> /projects/...)
+    stage = event.get('requestContext', {}).get('stage', '')
+    if stage and path.startswith(f'/{stage}'):
+        path = path[len(f'/{stage}'):]
+    if not path:
+        path = '/'
 
     # Strip trailing slash for consistency
     if path != '/' and path.endswith('/'):
