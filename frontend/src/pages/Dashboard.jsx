@@ -52,7 +52,7 @@ function ProjectCard({ project }) {
 
   return (
     <Link
-      to={`/projects/${project.project_id}`}
+      to={`/projects/${project.project_id || project.id}`}
       className="block bg-white rounded-lg border border-gray-200 p-5 hover:border-blue-300 transition-colors"
     >
       <div className="mb-3">
@@ -232,7 +232,7 @@ export default function Dashboard() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {projects.map((project) => (
-            <ProjectCard key={project.project_id} project={project} />
+            <ProjectCard key={project.project_id || project.id} project={project} />
           ))}
         </div>
       )}

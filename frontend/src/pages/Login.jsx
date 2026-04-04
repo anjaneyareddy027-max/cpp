@@ -18,6 +18,11 @@ export default function Login() {
       toast.error('Please fill in all fields');
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!emailRegex.test(email.trim())) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
     setLoading(true);
     try {
       const res = await apiLogin(email.trim(), password);
