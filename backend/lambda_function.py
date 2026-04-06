@@ -818,10 +818,52 @@ def handle_get_files(event, user, project_id):
         )
         files = sorted(result.get('Items', []), key=lambda f: f.get('createdAt', ''))
 
+        # Add file_url and normalize field names for frontend
+        for f in files:
+            s3_key = f.get('s3Key', '')
+            bucket = f.get('s3Bucket', S3_BUCKET)
+            if s3_key:
+                f['file_url'] = f"https://{bucket}.s3.eu-west-1.amazonaws.com/{s3_key}"
+            f['file_name'] = f.get('fileName', '')
+            f['file_type'] = f.get('fileType', '')
+            f['file_id'] = f.get('id', '')
+            f['uploaded_by'] = f.get('uploaderName', '')
+            f['created_at'] = f.get('createdAt', '')
+
         return build_response(200, {'files': files})
 
     except ClientError as e:
         print(f"DynamoDB error in get_files: {e}")
+        return build_response(500, {'error': 'Internal server error'})
+
+
+def handle_delete_file(event, user, project_id, file_id):
+    """DELETE /projects/{id}/files/{fileId} — delete a file from S3 and DynamoDB."""
+    try:
+        result = table.get_item(Key={'id': file_id})
+        item = result.get('Item')
+
+        if not item or item.get('entityType') != 'file':
+            return build_response(404, {'error': 'File not found'})
+
+        if item.get('projectId') != project_id:
+            return build_response(403, {'error': 'File does not belong to this project'})
+
+        # Delete from S3
+        s3_key = item.get('s3Key', '')
+        if s3_key:
+            try:
+                s3_client.delete_object(Bucket=item.get('s3Bucket', S3_BUCKET), Key=s3_key)
+            except Exception:
+                pass
+
+        # Delete from DynamoDB
+        table.delete_item(Key={'id': file_id})
+
+        return build_response(200, {'message': 'File deleted'})
+
+    except ClientError as e:
+        print(f"Error deleting file: {e}")
         return build_response(500, {'error': 'Internal server error'})
 
 
@@ -968,6 +1010,10 @@ def lambda_handler(event, context):
                 return handle_get_files(event, user, project_id)
             if http_method == 'POST':
                 return handle_upload_file(event, user, project_id)
+
+        # /projects/{id}/files/{fileId} — DELETE
+        if len(segments) == 5 and segments[3] == 'files' and http_method == 'DELETE':
+            return handle_delete_file(event, user, project_id, segments[4])
 
         # /projects/{id} — GET, PUT, DELETE (only if no further sub-path)
         if len(segments) == 3:

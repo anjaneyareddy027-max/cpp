@@ -14,6 +14,7 @@ import {
   sendMessage,
   getFiles,
   uploadFile,
+  deleteFile,
 } from '../api.js';
 import toast from 'react-hot-toast';
 import {
@@ -313,6 +314,17 @@ export default function ProjectDetail() {
       setUploading(false);
     }
     e.target.value = '';
+  };
+
+  const handleDeleteFile = async (fileId) => {
+    if (!window.confirm('Delete this file?')) return;
+    try {
+      await deleteFile(id, fileId);
+      toast.success('File deleted');
+      fetchFiles();
+    } catch {
+      toast.error('Failed to delete file');
+    }
   };
 
   /* ---- Settings ---- */
@@ -785,16 +797,24 @@ export default function ProjectDetail() {
                           {f.created_at ? formatTime(f.created_at) : ''}
                         </p>
                       </div>
-                      {(f.file_url || f.url) && (
-                        <a
-                          href={f.file_url || f.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-2 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                      <div className="flex items-center gap-1">
+                        {(f.file_url || f.url) && (
+                          <a
+                            href={f.file_url || f.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                          >
+                            <Download className="w-4 h-4" />
+                          </a>
+                        )}
+                        <button
+                          onClick={() => handleDeleteFile(f.file_id || f.id)}
+                          className="p-2 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                         >
-                          <Download className="w-4 h-4" />
-                        </a>
-                      )}
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   );
                 })}

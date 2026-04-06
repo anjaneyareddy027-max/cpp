@@ -78,6 +78,9 @@ export const uploadFile = (projectId, fileName, fileContent, fileType) =>
 export const getFiles = (projectId) =>
   api.get(`/projects/${projectId}/files`);
 
+export const deleteFile = (projectId, fileId) =>
+  api.delete(`/projects/${projectId}/files/${fileId}`);
+
 // Subscriptions
 export const subscribe = (email) => api.post('/subscribe', { email });
 
