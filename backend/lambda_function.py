@@ -395,6 +395,26 @@ def handle_get_project(event, user, project_id):
         if user['userId'] not in item.get('members', []):
             return build_response(403, {'error': 'You are not a member of this project'})
 
+        # Resolve member IDs to user objects with username and email
+        member_ids = item.get('members', [])
+        resolved_members = []
+        for mid in member_ids:
+            try:
+                u_result = table.get_item(Key={'id': mid})
+                u_item = u_result.get('Item')
+                if u_item and u_item.get('entityType') == 'user':
+                    resolved_members.append({
+                        'user_id': mid,
+                        'username': u_item.get('username', ''),
+                        'email': u_item.get('email', ''),
+                        'role': 'owner' if mid == item.get('createdBy') else 'member',
+                    })
+                else:
+                    resolved_members.append({'user_id': mid, 'username': mid, 'email': '', 'role': 'member'})
+            except Exception:
+                resolved_members.append({'user_id': mid, 'username': mid, 'email': '', 'role': 'member'})
+        item['members'] = resolved_members
+
         return build_response(200, {'project': item})
 
     except ClientError as e:

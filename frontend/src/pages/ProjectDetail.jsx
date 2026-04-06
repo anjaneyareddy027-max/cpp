@@ -101,7 +101,7 @@ export default function ProjectDetail() {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [taskForm, setTaskForm] = useState({
-    title: '', description: '', priority: 'medium', deadline: '', assigned_to: '',
+    title: '', description: '', priority: 'medium', deadline: '', assignedTo: '',
   });
   const [taskSaving, setTaskSaving] = useState(false);
 
@@ -203,7 +203,7 @@ export default function ProjectDetail() {
   /* ---- Task CRUD ---- */
   const openNewTask = () => {
     setEditingTask(null);
-    setTaskForm({ title: '', description: '', priority: 'medium', deadline: '', assigned_to: '' });
+    setTaskForm({ title: '', description: '', priority: 'medium', deadline: '', assignedTo: '' });
     setShowTaskForm(true);
   };
 
@@ -214,7 +214,7 @@ export default function ProjectDetail() {
       description: task.description || '',
       priority: task.priority || 'medium',
       deadline: task.deadline ? task.deadline.slice(0, 10) : '',
-      assigned_to: task.assigned_to || '',
+      assignedTo: task.assignedTo || '',
     });
     setShowTaskForm(true);
   };
@@ -232,7 +232,7 @@ export default function ProjectDetail() {
         description: taskForm.description.trim(),
         priority: taskForm.priority,
         deadline: taskForm.deadline || undefined,
-        assigned_to: taskForm.assigned_to || undefined,
+        assignedTo: taskForm.assignedTo || undefined,
       };
       if (editingTask) {
         await updateTask(editingTask.id, payload);
@@ -522,9 +522,9 @@ export default function ProjectDetail() {
                               </span>
                             )}
                             {/* Assigned */}
-                            {task.assigned_to && (
+                            {task.assignedTo && (
                               <span className="text-xs text-gray-400">
-                                {task.assigned_to}
+                                {task.assignedTo}
                               </span>
                             )}
                           </div>
@@ -631,8 +631,8 @@ export default function ProjectDetail() {
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">Assign to</label>
                       <div className="relative">
                         <select
-                          value={taskForm.assigned_to}
-                          onChange={(e) => setTaskForm({ ...taskForm, assigned_to: e.target.value })}
+                          value={taskForm.assignedTo}
+                          onChange={(e) => setTaskForm({ ...taskForm, assignedTo: e.target.value })}
                           className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                         >
                           <option value="">Unassigned</option>
