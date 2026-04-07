@@ -698,16 +698,25 @@ export default function ProjectDetail() {
                 </div>
               ) : (
                 messages.map((msg, i) => {
-                  const isOwn = msg.user_id === user?.user_id || msg.username === user?.username;
+                  // Backend stores senderId/senderName (not user_id/username).
+                  // Comparing against user.id (the current user's id from auth) —
+                  // previously both sides were undefined so every message rendered
+                  // as "own" on the right side with label "User".
+                  const senderId = msg.senderId || msg.sender_id;
+                  const senderName = msg.senderName || msg.sender_name || msg.username;
+                  const isOwn = !!senderId && senderId === user?.id;
+                  const displayName = senderName || 'Unknown';
                   return (
-                    <div key={msg.message_id || i} className={`flex gap-2.5 ${isOwn ? 'flex-row-reverse' : ''}`}>
-                      <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-[11px] font-bold text-white shrink-0">
-                        {getInitials(msg.username || 'U')}
+                    <div key={msg.id || msg.message_id || i} className={`flex gap-2.5 ${isOwn ? 'flex-row-reverse' : ''}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0 ${
+                        isOwn ? 'bg-blue-600' : 'bg-purple-500'
+                      }`}>
+                        {getInitials(displayName)}
                       </div>
-                      <div className={`max-w-[70%] ${isOwn ? 'items-end' : 'items-start'}`}>
+                      <div className={`max-w-[70%] flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
                         <div className={`flex items-baseline gap-2 mb-0.5 ${isOwn ? 'flex-row-reverse' : ''}`}>
-                          <span className="text-xs font-medium text-gray-700">{msg.username || 'User'}</span>
-                          <span className="text-xs text-gray-400">{formatTime(msg.created_at || msg.timestamp)}</span>
+                          <span className="text-xs font-semibold text-gray-700">{displayName}{isOwn && <span className="text-gray-400 font-normal"> (you)</span>}</span>
+                          <span className="text-xs text-gray-400">{formatTime(msg.createdAt || msg.created_at || msg.timestamp)}</span>
                         </div>
                         <div className={`px-3.5 py-2 rounded-xl text-sm ${
                           isOwn

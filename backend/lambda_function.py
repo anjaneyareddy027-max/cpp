@@ -818,13 +818,31 @@ def handle_get_files(event, user, project_id):
         )
         files = sorted(result.get('Items', []), key=lambda f: f.get('createdAt', ''))
 
-        # Add file_url and normalize field names for frontend
+        # Add file_url and normalize field names for frontend.
+        # Generate a presigned URL for each file so the browser can download
+        # the object directly from S3 — the project files prefix is NOT
+        # publicly readable, only the frontend assets are. Using a plain
+        # https://bucket.s3.../key URL previously returned 403 "Access Denied"
+        # when users clicked the download icon.
         for f in files:
             s3_key = f.get('s3Key', '')
             bucket = f.get('s3Bucket', S3_BUCKET)
+            original_name = f.get('fileName', 'file')
             if s3_key:
-                f['file_url'] = f"https://{bucket}.s3.eu-west-1.amazonaws.com/{s3_key}"
-            f['file_name'] = f.get('fileName', '')
+                try:
+                    f['file_url'] = s3_client.generate_presigned_url(
+                        'get_object',
+                        Params={
+                            'Bucket': bucket,
+                            'Key': s3_key,
+                            'ResponseContentDisposition': f'attachment; filename="{original_name}"',
+                        },
+                        ExpiresIn=3600,
+                    )
+                except Exception as exc:
+                    print(f"presign failed for {s3_key}: {exc}")
+                    f['file_url'] = ''
+            f['file_name'] = original_name
             f['file_type'] = f.get('fileType', '')
             f['file_id'] = f.get('id', '')
             f['uploaded_by'] = f.get('uploaderName', '')
