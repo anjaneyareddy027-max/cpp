@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './auth.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
-import Navbar from './components/Sidebar.jsx';
+import Sidebar from './components/Sidebar.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import Dashboard from './pages/Dashboard.jsx';
@@ -10,8 +10,8 @@ import ProjectDetail from './pages/ProjectDetail.jsx';
 function AuthenticatedLayout() {
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <main className="pt-16">
+      <Sidebar />
+      <main className="ml-60 min-h-screen">
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/projects/:id" element={<ProjectDetail />} />

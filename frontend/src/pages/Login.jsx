@@ -3,7 +3,17 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
 import { login as apiLogin } from '../api.js';
 import toast from 'react-hot-toast';
-import { GraduationCap, Mail, Lock, Loader2, ArrowRight } from 'lucide-react';
+import {
+  GraduationCap,
+  Mail,
+  Lock,
+  Loader2,
+  ArrowRight,
+  Users,
+  BookOpen,
+  MessageSquare,
+  Zap,
+} from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -36,25 +46,99 @@ export default function Login() {
     }
   };
 
+  const fillDemo = (type) => {
+    if (type === 'admin') {
+      setEmail('admin@anji.com');
+      setPassword('admin123');
+    } else {
+      setEmail('user@anji.com');
+      setPassword('user123');
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-600 mb-4">
-            <GraduationCap className="w-7 h-7 text-white" />
+    <div className="min-h-screen flex">
+      {/* LEFT: brand panel (hidden on mobile) */}
+      <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 text-white p-12 flex-col justify-between overflow-hidden">
+        {/* Decorative circles */}
+        <div className="absolute -top-20 -right-20 w-96 h-96 bg-white/5 rounded-full" />
+        <div className="absolute -bottom-32 -left-32 w-[500px] h-[500px] bg-white/5 rounded-full" />
+
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-12">
+            <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
+              <GraduationCap className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <div className="text-xl font-bold">StudyHub</div>
+              <div className="text-xs text-white/70 uppercase tracking-wider">Collaboration Platform</div>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">StudyHub</h1>
-          <p className="text-gray-500 mt-1 text-sm">Sign in to your account</p>
+
+          <h2 className="text-4xl font-bold mb-4 leading-tight">
+            Learn together.<br />
+            Build faster.
+          </h2>
+          <p className="text-white/80 text-base max-w-md">
+            Organise study projects, share resources, and track progress with your classmates in one place.
+          </p>
         </div>
 
-        {/* Form Card */}
-        <div className="bg-white rounded-xl border border-gray-200 p-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="relative z-10 space-y-4">
+          <Feature icon={Users} text="Team up on shared projects" />
+          <Feature icon={BookOpen} text="Track tasks and resources" />
+          <Feature icon={MessageSquare} text="Email notifications for updates" />
+          <Feature icon={Zap} text="Deployed on AWS serverless" />
+        </div>
+
+        <div className="relative z-10 text-xs text-white/50">
+          National College of Ireland · Cloud Platform Programming
+        </div>
+      </div>
+
+      {/* RIGHT: form panel */}
+      <div className="flex-1 flex items-center justify-center px-6 py-12 bg-white">
+        <div className="w-full max-w-sm">
+          {/* Mobile-only brand header */}
+          <div className="lg:hidden text-center mb-8">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-600 mb-3">
+              <GraduationCap className="w-6 h-6 text-white" />
+            </div>
+            <h1 className="text-xl font-bold text-gray-900">StudyHub</h1>
+          </div>
+
+          <h2 className="text-2xl font-bold text-gray-900 mb-1">Welcome back</h2>
+          <p className="text-sm text-gray-500 mb-6">Sign in to continue to StudyHub</p>
+
+          {/* Demo credentials callout at top (distinct from Goutham's bottom card and Rakshan's pill) */}
+          <div className="mb-6 border border-dashed border-blue-200 bg-blue-50/50 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2.5">
+              <Zap className="w-3.5 h-3.5 text-blue-600" />
+              <span className="text-[11px] font-semibold text-blue-700 uppercase tracking-wider">Quick demo access</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => fillDemo('admin')}
+                className="flex flex-col items-start gap-0.5 bg-white border border-blue-200 hover:border-blue-400 hover:bg-blue-50 rounded-lg px-3 py-2 transition-colors text-left"
+              >
+                <span className="text-[10px] font-semibold text-blue-600 uppercase">Admin</span>
+                <span className="text-[11px] text-gray-600 truncate w-full">admin@anji.com</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => fillDemo('user')}
+                className="flex flex-col items-start gap-0.5 bg-white border border-blue-200 hover:border-blue-400 hover:bg-blue-50 rounded-lg px-3 py-2 transition-colors text-left"
+              >
+                <span className="text-[10px] font-semibold text-blue-600 uppercase">User</span>
+                <span className="text-[11px] text-gray-600 truncate w-full">user@anji.com</span>
+              </button>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Email address
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email address</label>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
@@ -69,9 +153,7 @@ export default function Login() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Password
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
@@ -87,7 +169,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium text-sm rounded-lg transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-60 text-white font-medium text-sm rounded-lg transition-all shadow-sm"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -100,19 +182,25 @@ export default function Login() {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-500">
-              Don't have an account?{' '}
-              <Link
-                to="/register"
-                className="font-medium text-blue-600 hover:text-blue-700 transition-colors"
-              >
-                Register
-              </Link>
-            </p>
-          </div>
+          <p className="mt-6 text-center text-sm text-gray-500">
+            New here?{' '}
+            <Link to="/register" className="font-medium text-blue-600 hover:text-blue-700">
+              Create a free account
+            </Link>
+          </p>
         </div>
       </div>
+    </div>
+  );
+}
+
+function Feature({ icon: Icon, text }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="w-9 h-9 rounded-lg bg-white/10 backdrop-blur flex items-center justify-center shrink-0">
+        <Icon className="w-4 h-4 text-white" />
+      </div>
+      <span className="text-sm text-white/90">{text}</span>
     </div>
   );
 }
