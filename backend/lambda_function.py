@@ -333,7 +333,7 @@ def handle_login(event):
 # ===========================================================================
 
 def handle_get_projects(event, user):
-    """GET /projects — return projects where the user is a member."""
+    """GET /projects — return projects where the user is a member, with tasks included."""
     try:
         result = table.scan(
             FilterExpression=Attr('entityType').eq('project')
@@ -343,6 +343,22 @@ def handle_get_projects(event, user):
             p for p in result.get('Items', [])
             if user['userId'] in p.get('members', [])
         ]
+
+        # Fetch all tasks and attach them to their projects
+        tasks_result = table.scan(
+            FilterExpression=Attr('entityType').eq('task')
+        )
+        all_tasks = tasks_result.get('Items', [])
+        tasks_by_project = {}
+        for t in all_tasks:
+            pid = t.get('projectId', '')
+            if pid not in tasks_by_project:
+                tasks_by_project[pid] = []
+            tasks_by_project[pid].append(t)
+
+        for p in projects:
+            p['tasks'] = tasks_by_project.get(p['id'], [])
+
         return build_response(200, {'projects': projects})
 
     except ClientError as e:
