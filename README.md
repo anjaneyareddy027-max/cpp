@@ -31,6 +31,7 @@ A serverless platform that enables students to collaborate on projects, manage t
 
 ## Project Structure
 
+
 ```
 studyhub/
   backend/          # Lambda function (Python)
