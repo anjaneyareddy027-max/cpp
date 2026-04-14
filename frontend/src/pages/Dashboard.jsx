@@ -229,8 +229,8 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard icon={FolderKanban} label="Total Projects" value={projects.length} loading={loading} />
         <StatCard icon={ListTodo} label="Total Tasks" value={totalTasks} loading={loading} />
-        <StatCard icon={CheckCircle2} label="Completed" value={completedTasks} loading={loading} />
         <StatCard icon={Clock} label="Due This Week" value={pendingDeadlines} loading={loading} />
+        <StatCard icon={CheckCircle2} label="Completed" value={completedTasks} loading={loading} />
       </div>
 
       {/* Projects */}
