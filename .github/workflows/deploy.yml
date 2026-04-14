@@ -170,6 +170,13 @@ jobs:
           aws apigateway create-deployment --rest-api-id $API_ID --stage-name prod --region eu-west-1
           echo "API_URL=https://${API_ID}.execute-api.eu-west-1.amazonaws.com/prod" >> $GITHUB_ENV
 
+      - name: Seed demo data
+        run: |
+          pip install boto3
+          export DYNAMODB_TABLE=studyhub-prod
+          export REGION=eu-west-1
+          python backend/seed.py
+
   deploy-frontend:
     needs: deploy-backend
     runs-on: ubuntu-latest
