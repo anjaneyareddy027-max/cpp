@@ -39,8 +39,15 @@ function ProjectCard({ project }) {
   const memberCount = project.members?.length || 0;
   const tasks = project.tasks || [];
   const completedTasks = tasks.filter((t) => t.status === 'done').length;
+  const inProgressTasks = tasks.filter((t) => t.status === 'in_progress').length;
+  const reviewTasks = tasks.filter((t) => t.status === 'review').length;
+  const todoTasks = tasks.filter((t) => t.status === 'todo').length;
   const totalTasks = tasks.length;
   const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+  const progressColor = progress === 100 ? 'bg-green-500' : progress >= 60 ? 'bg-blue-600' : progress >= 30 ? 'bg-yellow-500' : progress > 0 ? 'bg-orange-500' : 'bg-gray-300';
+  const statusLabel = progress === 100 ? 'Completed' : progress >= 60 ? 'In Progress' : progress > 0 ? 'Started' : 'Not Started';
+  const statusBg = progress === 100 ? 'bg-green-100 text-green-700' : progress >= 60 ? 'bg-blue-100 text-blue-700' : progress > 0 ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500';
 
   const createdDate = project.created_at
     ? new Date(project.created_at).toLocaleDateString('en-US', {
@@ -53,27 +60,61 @@ function ProjectCard({ project }) {
   return (
     <Link
       to={`/projects/${project.project_id || project.id}`}
-      className="block bg-white rounded-lg border border-gray-200 p-5 hover:border-blue-300 transition-colors"
+      className="block bg-white rounded-lg border border-gray-200 p-5 hover:border-blue-300 hover:shadow-md transition-all"
     >
-      <div className="mb-3">
-        <h3 className="font-semibold text-gray-800 truncate">{project.name}</h3>
-        <p className="text-sm text-gray-500 mt-0.5 line-clamp-2">
-          {project.description || 'No description'}
-        </p>
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-gray-800 truncate">{project.name}</h3>
+          <p className="text-sm text-gray-500 mt-0.5 line-clamp-2">
+            {project.description || 'No description'}
+          </p>
+        </div>
+        <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${statusBg}`}>
+          {statusLabel}
+        </span>
       </div>
 
       {/* Progress */}
       <div className="mb-3">
         <div className="flex items-center justify-between text-xs mb-1.5">
-          <span className="text-gray-500">Task progress</span>
-          <span className="text-gray-700 font-semibold">{progress}%</span>
+          <span className="text-gray-600 font-medium">Task Progress</span>
+          <span className="text-gray-800 font-bold text-sm">{progress}%</span>
         </div>
-        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+        <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
           <div
-            className="h-full bg-blue-600 rounded-full transition-all duration-500"
-            style={{ width: `${progress}%` }}
+            className={`h-full ${progressColor} rounded-full transition-all duration-500`}
+            style={{ width: `${Math.max(progress, progress > 0 ? 4 : 0)}%` }}
           />
         </div>
+        {/* Task status breakdown */}
+        {totalTasks > 0 && (
+          <div className="flex items-center gap-3 mt-2 text-xs">
+            {completedTasks > 0 && (
+              <span className="flex items-center gap-1 text-green-600">
+                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                {completedTasks} done
+              </span>
+            )}
+            {inProgressTasks > 0 && (
+              <span className="flex items-center gap-1 text-blue-600">
+                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                {inProgressTasks} active
+              </span>
+            )}
+            {reviewTasks > 0 && (
+              <span className="flex items-center gap-1 text-yellow-600">
+                <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+                {reviewTasks} review
+              </span>
+            )}
+            {todoTasks > 0 && (
+              <span className="flex items-center gap-1 text-gray-500">
+                <span className="w-2 h-2 rounded-full bg-gray-400"></span>
+                {todoTasks} todo
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Footer */}
