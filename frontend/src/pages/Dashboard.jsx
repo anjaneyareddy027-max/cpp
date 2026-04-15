@@ -43,7 +43,11 @@ function ProjectCard({ project }) {
   const reviewTasks = tasks.filter((t) => t.status === 'review').length;
   const todoTasks = tasks.filter((t) => t.status === 'todo').length;
   const totalTasks = tasks.length;
-  const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  // Weighted progress: done=100%, review=75%, in_progress=50%, todo=0%
+  const weightedScore = totalTasks > 0
+    ? Math.round(((completedTasks * 100) + (reviewTasks * 75) + (inProgressTasks * 50)) / totalTasks)
+    : 0;
+  const progress = Math.min(weightedScore, 100);
 
   const progressColor = progress === 100 ? 'bg-green-500' : progress >= 60 ? 'bg-blue-600' : progress >= 30 ? 'bg-yellow-500' : progress > 0 ? 'bg-orange-500' : 'bg-gray-300';
   const statusLabel = progress === 100 ? 'Completed' : progress >= 60 ? 'In Progress' : progress > 0 ? 'Started' : 'Not Started';
@@ -80,11 +84,19 @@ function ProjectCard({ project }) {
           <span className="text-gray-600 font-medium">Task Progress</span>
           <span className="text-gray-800 font-bold text-sm">{progress}%</span>
         </div>
-        <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-          <div
-            className={`h-full ${progressColor} rounded-full transition-all duration-500`}
-            style={{ width: `${Math.max(progress, progress > 0 ? 4 : 0)}%` }}
-          />
+        <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden flex">
+          {totalTasks > 0 && completedTasks > 0 && (
+            <div className="h-full bg-green-500 transition-all duration-500"
+              style={{ width: `${(completedTasks / totalTasks) * 100}%` }} />
+          )}
+          {totalTasks > 0 && reviewTasks > 0 && (
+            <div className="h-full bg-yellow-500 transition-all duration-500"
+              style={{ width: `${(reviewTasks / totalTasks) * 100}%` }} />
+          )}
+          {totalTasks > 0 && inProgressTasks > 0 && (
+            <div className="h-full bg-blue-500 transition-all duration-500"
+              style={{ width: `${(inProgressTasks / totalTasks) * 100}%` }} />
+          )}
         </div>
         {/* Task status breakdown */}
         {totalTasks > 0 && (
